@@ -47,17 +47,17 @@ rustPlatform.buildRustPackage {
   pname = "celeste";
   version = "0.10.0";
 
-  # Filter out build artefacts so rebuilds don't invalidate the store path
-  # whenever `cargo build` is run outside of Nix.
+  # Filter out build artefacts *and* VCS/editor cruft so rebuilds don't
+  # invalidate the store path whenever `cargo build` runs outside Nix or
+  # `.git/` changes (commits, fetches, even the odd index stat).
+  # lib.cleanSourceFilter drops .git, editor backups, and result symlinks.
   src = lib.cleanSourceWith {
     src = celesteSource;
     name = "celeste-source";
     filter =
       path: type:
-      let
-        base = baseNameOf (toString path);
-      in
-      !(builtins.elem base [
+      lib.cleanSourceFilter path type
+      && !(builtins.elem (baseNameOf (toString path)) [
         "target"
         "result"
       ]);
