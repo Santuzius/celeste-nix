@@ -1,5 +1,13 @@
 # Celeste — GUI file synchronization client (cloud → local)
-# Built from the local checkout at /home/santuzius/Git/celeste.
+# Built from a local checkout of the Celeste source tree. Defaults to a
+# sibling directory under $HOME/Git (i.e. ~/Git/celeste) so that cloning
+# this repo alongside celeste/ "just works":
+#
+#   ~/Git/celeste        ← source checkout
+#   ~/Git/celeste-nix    ← this repo
+#
+# Callers that hold the source elsewhere should pass `celesteSource`
+# explicitly (e.g. from a NixOS flake module).
 #
 # Reuses the project's shell.nix for build & runtime dependencies so that
 # changes in the upstream dev-shell are picked up automatically.
@@ -9,16 +17,19 @@
 # modules.  The repository ships a pre-built libceleste_native.a — we
 # patch build.rs to copy it instead of invoking `go build`.
 #
-# Because src is an absolute path outside the flake, evaluation requires
-# impure mode — invoke `nixos-rebuild switch --flake .#<host> --impure`
-# (or test standalone with
-#   `nix-build -E 'with import <nixpkgs> {}; callPackage ./. {}'`).
+# Because src resolves to a path outside the Nix store, evaluation
+# requires impure mode — invoke `nixos-rebuild switch --flake .#<host>
+# --impure` (or test standalone with
+#   `nix-build -E 'with import <nixpkgs> {}; callPackage ./. {}' --impure`).
 {
   lib,
   pkgs,
   rustPlatform,
   makeWrapper,
-  celesteSource ? /home/santuzius/Git/celeste,
+  # Nix path (not string) — required by cargoLock.lockFile and
+  # lib.cleanSourceWith.src below. `/. + "…"` coerces the interpolated
+  # $HOME string into a path literal.
+  celesteSource ? /. + "${builtins.getEnv "HOME"}/Git/celeste",
 }:
 
 let
