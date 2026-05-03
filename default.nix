@@ -45,7 +45,7 @@ in
 
 rustPlatform.buildRustPackage {
   pname = "celeste";
-  version = "0.10.4";
+  version = "0.10.5";
 
   # Filter out build artefacts *and* VCS/editor cruft so rebuilds don't
   # invalidate the store path whenever `cargo build` runs outside Nix or
