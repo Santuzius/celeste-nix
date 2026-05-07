@@ -14,7 +14,7 @@
 #
 # The native-go/ crate normally runs `go build` to produce a static Go
 # archive, but the Nix sandbox has no network access so Go cannot fetch
-# modules.  The repository ships a pre-built libceleste_native.a — we
+# modules.  The repository ships a pre-built libceleste_go.a — we
 # patch build.rs to copy it instead of invoking `go build`.
 #
 # Because src resolves to a path outside the Nix store, evaluation
@@ -68,23 +68,23 @@ rustPlatform.buildRustPackage {
   };
 
   postPatch = ''
-    # ── Skip the Go build inside native-go/build.rs ──────────────────
+    # ── Skip the Go build inside src/go/build.rs ──────────────────
     # Replace `go build` with `true` (always succeeds, ignores args),
     # then replace the assertion with commands that copy the pre-built
     # Go archive from the source tree into $OUT_DIR.
-    substituteInPlace native-go/build.rs \
+    substituteInPlace src/go/build.rs \
       --replace-fail \
         'Command::new("go")' \
         'Command::new("true")'
 
-    substituteInPlace native-go/build.rs \
+    substituteInPlace src/go/build.rs \
       --replace-fail \
         'assert!(status.success(), "go build failed");' \
         '// Nix: copy pre-built Go archive (sandbox cannot run go build).
-    std::fs::copy(manifest_dir.join("libceleste_native.a"), &lib_path)
-        .expect("failed to copy pre-built libceleste_native.a");
-    std::fs::copy(manifest_dir.join("libceleste_native.h"), &header_path)
-        .expect("failed to copy pre-built libceleste_native.h");'
+    std::fs::copy(manifest_dir.join("libceleste_go.a"), &lib_path)
+        .expect("failed to copy pre-built libceleste_go.a");
+    std::fs::copy(manifest_dir.join("libceleste_go.h"), &header_path)
+        .expect("failed to copy pre-built libceleste_go.h");'
   '';
 
   # Required because some dependencies rely on unstable Rust features gated
