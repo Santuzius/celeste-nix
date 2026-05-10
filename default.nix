@@ -41,6 +41,25 @@ let
   filteredNativeBuildInputs = builtins.filter (
     p: !(builtins.elem (p.pname or "") [ "rustc" "cargo" ])
   ) celesteShell.nativeBuildInputs;
+
+  # The upstream tree no longer ships a .desktop file — generate one
+  # here so the menu entry and the XDG autostart hook still work.
+  # `Exec=celeste` is rewritten to the wrapped binary in $out/bin
+  # for the autostart copy below.
+  desktopFile = pkgs.writeText "Celeste.desktop" ''
+    [Desktop Entry]
+    Type=Application
+    Name=Celeste
+    GenericName=File Synchronization Client
+    Comment=Sync local folders with Google Drive or Proton Drive
+    Exec=celeste
+    Icon=celeste-icon
+    Terminal=false
+    Categories=Utility;FileTransfer;Network;
+    StartupNotify=true
+    StartupWMClass=celeste
+    Keywords=sync;cloud;backup;rclone;
+  '';
 in
 
 rustPlatform.buildRustPackage {
@@ -105,31 +124,23 @@ rustPlatform.buildRustPackage {
       --prefix LD_LIBRARY_PATH : "${celesteShell.LD_LIBRARY_PATH}"
   '';
 
-  # Install the menu entry, icons, metainfo, and an XDG autostart entry.
+  # Install the menu entry, icon, and an XDG autostart entry.
   # /etc/xdg/autostart is picked up by KDE/GNOME at session start because
   # NixOS links $out/etc/xdg/* into /etc/xdg/ via environment.pathsToLink.
+  # Tray pixmaps and the metainfo file no longer ship in assets/ — the
+  # tray icons are embedded via icondata at build time, and metainfo is
+  # only relevant to the upstream Flatpak/AppStream build.
   postInstall = ''
-    install -Dm 644 assets/com.hunterwittenborn.Celeste.desktop \
-      $out/share/applications/com.hunterwittenborn.Celeste.desktop
-    install -Dm 644 assets/com.hunterwittenborn.Celeste-regular.svg \
-      $out/share/icons/hicolor/scalable/apps/com.hunterwittenborn.Celeste.svg
-    install -Dm 644 assets/com.hunterwittenborn.Celeste.metainfo.xml \
-      $out/share/metainfo/com.hunterwittenborn.Celeste.metainfo.xml
-
-    for icon in \
-      com.hunterwittenborn.Celeste.CelesteTrayLoading-symbolic.svg \
-      com.hunterwittenborn.Celeste.CelesteTraySyncing-symbolic.svg \
-      com.hunterwittenborn.Celeste.CelesteTrayWarning-symbolic.svg \
-      com.hunterwittenborn.Celeste.CelesteTrayDone-symbolic.svg; do
-      install -Dm 644 "assets/context/$icon" \
-        "$out/share/icons/hicolor/symbolic/apps/$icon"
-    done
+    install -Dm 644 ${desktopFile} \
+      $out/share/applications/Celeste.desktop
+    install -Dm 644 assets/celeste-icon.svg \
+      $out/share/icons/hicolor/scalable/apps/celeste-icon.svg
 
     # Reuse the menu .desktop as an XDG autostart entry. Point Exec at the
     # wrapped binary in $out/bin so KDE does not rely on PATH resolution.
-    install -Dm 644 assets/com.hunterwittenborn.Celeste.desktop \
-      $out/etc/xdg/autostart/com.hunterwittenborn.Celeste.desktop
-    substituteInPlace $out/etc/xdg/autostart/com.hunterwittenborn.Celeste.desktop \
+    install -Dm 644 ${desktopFile} \
+      $out/etc/xdg/autostart/Celeste.desktop
+    substituteInPlace $out/etc/xdg/autostart/Celeste.desktop \
       --replace-fail 'Exec=celeste' "Exec=$out/bin/celeste"
   '';
 
