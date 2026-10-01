@@ -1,3 +1,5 @@
+# DEPRECATED: use the flake in https://github.com/Santuzius/celeste (see README.md). This repository is archived.
+#
 # Celeste — GUI file synchronization client (cloud → local)
 # Built from a local checkout of the Celeste source tree. Defaults to a
 # sibling directory under $HOME/Git (i.e. ~/Git/celeste) so that cloning
